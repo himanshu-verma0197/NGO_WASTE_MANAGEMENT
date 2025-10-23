@@ -19,6 +19,7 @@
     "postcss": "^8.4.38",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.4",
     "react-scripts": "5.0.1",
     "react-webcam": "^7.2.0",
     "router": "^2.2.0",
