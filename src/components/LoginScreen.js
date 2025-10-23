@@ -26,12 +26,12 @@ const LoginScreen = ({ setCurrentScreen }) => {
 
                 {/* Admin Login */}
                 <button
-                    onClick={() => setCurrentScreen("adminLogin")}
+                    onClick={() => setCurrentScreen("userLogin")}  // <--- point it to the same login page
                     className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 
           text-white font-semibold py-4 px-6 rounded-xl transition transform hover:scale-105 flex items-center justify-center gap-2"
                 >
                     <Shield className="h-5 w-5" />
-                    Login as NGO Admin
+                    Login as Admin
                 </button>
 
                 <p className="text-sm text-gray-500 mt-6">
