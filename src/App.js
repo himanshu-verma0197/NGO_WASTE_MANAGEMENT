@@ -7,58 +7,58 @@ import UserDashboard from "./components/UserDashboard";
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState("loginScreen");
-
-  // 🧠 Persistent shared state
   const [reports, setReports] = useState(() => {
-    // Load existing reports from localStorage when app starts
+    // Load reports from localStorage when app starts
     const saved = localStorage.getItem("reports");
     return saved ? JSON.parse(saved) : [];
   });
 
-  // 💾 Save to localStorage whenever reports change
+  // Sync with localStorage every time reports change
   useEffect(() => {
     localStorage.setItem("reports", JSON.stringify(reports));
   }, [reports]);
 
-  // 🧍 User submits a new report
+  // ✅ Add new report from UserDashboard
   const handleAddReport = (newReport) => {
-    const updatedReports = [
+    const updated = [
       ...reports,
       { id: Date.now(), status: "pending", ...newReport },
     ];
-    setReports(updatedReports);
+    setReports(updated);
   };
 
-  // 👨‍💼 Admin approves a report
+  // ✅ Approve report in AdminDashboard
   const handleApproveReport = (id) => {
-    const updatedReports = reports.map((r) =>
+    const updated = reports.map((r) =>
       r.id === id ? { ...r, status: "approved" } : r
     );
-    setReports(updatedReports);
+    setReports(updated);
   };
 
   return (
     <div className="bg-slate-300 min-h-screen">
+      {/* Login Selection Screen */}
       {currentScreen === "loginScreen" && (
         <LoginScreen setCurrentScreen={setCurrentScreen} />
       )}
 
+      {/* User Login / Signup */}
       {currentScreen === "userLogin" && (
         <Login role="user" setCurrentScreen={setCurrentScreen} />
       )}
-
       {currentScreen === "signup" && (
         <Signup role="user" setCurrentScreen={setCurrentScreen} />
       )}
 
+      {/* Admin Login / Signup */}
       {currentScreen === "adminLogin" && (
         <Login role="admin" setCurrentScreen={setCurrentScreen} />
       )}
-
       {currentScreen === "adminSignup" && (
         <Signup role="admin" setCurrentScreen={setCurrentScreen} />
       )}
 
+      {/* User Dashboard */}
       {currentScreen === "userDashboard" && (
         <UserDashboard
           reports={reports}
@@ -67,6 +67,7 @@ function App() {
         />
       )}
 
+      {/* Admin Dashboard */}
       {currentScreen === "adminDashboard" && (
         <AdminDashboard
           reports={reports}
