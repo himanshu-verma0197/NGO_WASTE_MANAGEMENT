@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const Signup = ({ setCurrentScreen, showAlert }) => {
+const Signup = ({ setCurrentScreen, role = "user" }) => {
     const [credentials, setCredentials] = useState({
         name: "",
         email: "",
@@ -15,17 +15,24 @@ const Signup = ({ setCurrentScreen, showAlert }) => {
         const response = await fetch("http://localhost:5000/api/auth/createuser", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, password }),
+            body: JSON.stringify({ name, email, password, role }),
         });
 
         const json = await response.json();
 
         if (json.authtoken) {
             localStorage.setItem("token", json.authtoken);
-            showAlert("Account created successfully!", "success");
-            setCurrentScreen("user");
+            localStorage.setItem("role", json.role);
+
+            // Redirect based on role
+            if (role === "admin") {
+                setCurrentScreen("adminDashboard");
+            } else {
+                setCurrentScreen("userDashboard");
+            }
         } else {
-            showAlert("Signup failed. Try again.", "danger");
+            // Optional: show inline error message instead of alert
+            console.log("Signup failed. Try again.");
         }
     };
 
@@ -40,7 +47,7 @@ const Signup = ({ setCurrentScreen, showAlert }) => {
                 className="bg-white p-10 rounded-2xl shadow-lg w-full max-w-md"
             >
                 <h2 className="text-2xl font-semibold text-center mb-6">
-                    Create an Account
+                    {role === "admin" ? "Admin Signup" : "User Signup"}
                 </h2>
 
                 <div className="mb-3">
@@ -111,7 +118,9 @@ const Signup = ({ setCurrentScreen, showAlert }) => {
                 <div className="text-center mt-4">
                     <button
                         type="button"
-                        onClick={() => setCurrentScreen("userLogin")}
+                        onClick={() =>
+                            setCurrentScreen(role === "admin" ? "adminLogin" : "userLogin")
+                        }
                         className="text-blue-600 hover:underline text-sm"
                     >
                         Already have an account? Login

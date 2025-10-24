@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const Login = ({ setCurrentScreen, showAlert, role = "user" }) => {
+const Login = ({ setCurrentScreen, role = "user" }) => {
     const [credentials, setCredentials] = useState({ email: "", password: "" });
 
     const handleSubmit = async (e) => {
@@ -14,23 +14,25 @@ const Login = ({ setCurrentScreen, showAlert, role = "user" }) => {
             body: JSON.stringify({
                 email: credentials.email,
                 password: credentials.password,
-                role: role, // 👈 important: pass role here
+                role: role, // include role
             }),
         });
 
         const json = await response.json();
+
         if (json.success) {
             localStorage.setItem("token", json.authtoken);
             localStorage.setItem("role", json.role);
-            showAlert("Login successful!", "success");
 
+            // Navigate based on role
             if (json.role === "admin") {
                 setCurrentScreen("adminDashboard");
             } else {
                 setCurrentScreen("userDashboard");
             }
         } else {
-            showAlert("Invalid credentials", "danger");
+            // Optionally, you can show an inline error message instead of alert
+            console.log("Invalid credentials");
         }
     };
 
@@ -40,7 +42,10 @@ const Login = ({ setCurrentScreen, showAlert, role = "user" }) => {
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-50">
-            <form onSubmit={handleSubmit} className="bg-white p-10 rounded-2xl shadow-lg w-full max-w-md">
+            <form
+                onSubmit={handleSubmit}
+                className="bg-white p-10 rounded-2xl shadow-lg w-full max-w-md"
+            >
                 <h2 className="text-2xl font-semibold text-center mb-6">
                     {role === "admin" ? "Admin Login" : "User Login"}
                 </h2>
@@ -83,7 +88,9 @@ const Login = ({ setCurrentScreen, showAlert, role = "user" }) => {
                 <div className="text-center mt-4">
                     <button
                         type="button"
-                        onClick={() => setCurrentScreen(role === "admin" ? "adminSignup" : "signup")}
+                        onClick={() =>
+                            setCurrentScreen(role === "admin" ? "adminSignup" : "signup")
+                        }
                         className="text-blue-600 hover:underline text-sm"
                     >
                         No account? Create one
