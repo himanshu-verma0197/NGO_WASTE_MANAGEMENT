@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import LoginScreen from "./components/LoginScreen";
 import Login from "./components/login";
 import Signup from "./components/signup";
@@ -8,40 +8,71 @@ import UserDashboard from "./components/UserDashboard";
 function App() {
   const [currentScreen, setCurrentScreen] = useState("loginScreen");
 
+  // 🧠 Persistent shared state
+  const [reports, setReports] = useState(() => {
+    // Load existing reports from localStorage when app starts
+    const saved = localStorage.getItem("reports");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // 💾 Save to localStorage whenever reports change
+  useEffect(() => {
+    localStorage.setItem("reports", JSON.stringify(reports));
+  }, [reports]);
+
+  // 🧍 User submits a new report
+  const handleAddReport = (newReport) => {
+    const updatedReports = [
+      ...reports,
+      { id: Date.now(), status: "pending", ...newReport },
+    ];
+    setReports(updatedReports);
+  };
+
+  // 👨‍💼 Admin approves a report
+  const handleApproveReport = (id) => {
+    const updatedReports = reports.map((r) =>
+      r.id === id ? { ...r, status: "approved" } : r
+    );
+    setReports(updatedReports);
+  };
+
   return (
     <div className="bg-slate-300 min-h-screen">
       {currentScreen === "loginScreen" && (
         <LoginScreen setCurrentScreen={setCurrentScreen} />
       )}
 
-      {/* User Login */}
       {currentScreen === "userLogin" && (
         <Login role="user" setCurrentScreen={setCurrentScreen} />
       )}
 
-      {/* User Signup */}
       {currentScreen === "signup" && (
         <Signup role="user" setCurrentScreen={setCurrentScreen} />
       )}
 
-      {/* Admin Login */}
       {currentScreen === "adminLogin" && (
         <Login role="admin" setCurrentScreen={setCurrentScreen} />
       )}
 
-      {/* Admin Signup */}
       {currentScreen === "adminSignup" && (
         <Signup role="admin" setCurrentScreen={setCurrentScreen} />
       )}
 
-      {/* Admin Dashboard */}
-      {currentScreen === "adminDashboard" && (
-        <AdminDashboard setCurrentScreen={setCurrentScreen} />
+      {currentScreen === "userDashboard" && (
+        <UserDashboard
+          reports={reports}
+          onAddReport={handleAddReport}
+          setCurrentScreen={setCurrentScreen}
+        />
       )}
 
-      {/* User Dashboard */}
-      {currentScreen === "userDashboard" && (
-        <UserDashboard setCurrentScreen={setCurrentScreen} />
+      {currentScreen === "adminDashboard" && (
+        <AdminDashboard
+          reports={reports}
+          onApprove={handleApproveReport}
+          setCurrentScreen={setCurrentScreen}
+        />
       )}
     </div>
   );
