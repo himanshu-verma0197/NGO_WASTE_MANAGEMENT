@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const mongoURI = "mongodb://localhost:27017/backenedtest";
+const mongoURI = "mongodb://localhost:27017/wastemanagement"; // ✅ Change DB name
+
 const connectToMongo = async () => {
     try {
         await mongoose.connect(mongoURI);

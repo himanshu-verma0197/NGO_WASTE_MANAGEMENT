@@ -6,9 +6,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const fetchuser = require('../middleware/fetchuser');
 
-const JWT_SECRET = 'ThisIsTheNotebookWebApplication';
+const JWT_SECRET = 'ThisIsTheWasteManagementApp';
 
-// ROUTE 1: Create a User using: POST "/api/auth/createuser"
+// 🟢 ROUTE 1: Register user/admin
 router.post('/createuser', [
     body('name', 'Enter a valid name').isLength({ min: 3 }),
     body('email', 'Enter a valid email').isEmail(),
@@ -22,25 +22,24 @@ router.post('/createuser', [
     try {
         let user = await User.findOne({ email: req.body.email });
         if (user) {
-            return res.status(400).json({ error: "A user with this email already exists" });
+            return res.status(400).json({ error: "User with this email already exists" });
         }
 
         const salt = await bcrypt.genSalt(10);
         const secPass = await bcrypt.hash(req.body.password, salt);
 
-        // Create new user (can be admin or normal user)
         user = await User.create({
             name: req.body.name,
-            password: secPass,
             email: req.body.email,
-            role: req.body.role || "user", // 👈 allow role from frontend
+            password: secPass,
+            role: req.body.role || 'user'
         });
 
         const data = {
             user: {
                 id: user.id,
-                role: user.role, // 👈 include role in token
-            },
+                role: user.role
+            }
         };
 
         const authtoken = jwt.sign(data, JWT_SECRET);
@@ -52,8 +51,7 @@ router.post('/createuser', [
     }
 });
 
-
-// ROUTE 2: Authenticate a User using: POST "/api/auth/login"
+// 🟡 ROUTE 2: Login user
 router.post('/login', [
     body('email', 'Enter a valid email').isEmail(),
     body('password', 'Password cannot be blank').exists(),
@@ -67,25 +65,21 @@ router.post('/login', [
     const { email, password } = req.body;
     try {
         let user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ success, error: "Invalid credentials" });
-        }
+        if (!user) return res.status(400).json({ success, error: "Invalid credentials" });
 
         const passwordCompare = await bcrypt.compare(password, user.password);
-        if (!passwordCompare) {
-            return res.status(400).json({ success, error: "Invalid credentials" });
-        }
+        if (!passwordCompare) return res.status(400).json({ success, error: "Invalid credentials" });
 
         const data = {
             user: {
                 id: user.id,
-                role: user.role, // 👈 include role in token
-            },
+                role: user.role
+            }
         };
 
         const authtoken = jwt.sign(data, JWT_SECRET);
         success = true;
-        res.json({ success, authtoken, role: user.role }); // 👈 send role to frontend
+        res.json({ success, authtoken, role: user.role });
 
     } catch (error) {
         console.error(error.message);
@@ -93,12 +87,10 @@ router.post('/login', [
     }
 });
 
-
-// ROUTE 3: Get logged-in User details using: POST "/api/auth/getuser"
+// 🔵 ROUTE 3: Get logged-in user details
 router.post('/getuser', fetchuser, async (req, res) => {
     try {
-        const userId = req.user.id;
-        const user = await User.findById(userId).select("-password");
+        const user = await User.findById(req.user.id).select("-password");
         res.send(user);
     } catch (error) {
         console.error(error.message);

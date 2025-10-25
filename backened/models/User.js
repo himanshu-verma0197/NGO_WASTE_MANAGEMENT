@@ -17,13 +17,13 @@ const UserSchema = new Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'admin'], // 👈 Only these two roles allowed
-        default: 'user'           // 👈 Default role for normal signup
+        enum: ['user', 'admin'],
+        default: 'user'
     },
     date: {
         type: Date,
         default: Date.now
-    },
+    }
 });
 
 const User = mongoose.model('user', UserSchema);
