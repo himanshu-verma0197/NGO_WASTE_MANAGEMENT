@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import UserCamera from "./UserCamera";
-import { Leaf, Trash2, LogOut } from "lucide-react"; // icons
+import { Leaf, Trash2, LogOut } from "lucide-react";
 
 const UserDashboard = ({ setCurrentScreen }) => {
     const [reports, setReports] = useState([]);
     const [description, setDescription] = useState("");
-    const [, setImage] = useState(null); // we only use setImage, not image
+    const [image, setImage] = useState(null);
     const [selectedView, setSelectedView] = useState(null);
     const token = localStorage.getItem("token");
 
-    // ✅ fetchReports moved inside useEffect to remove dependency warning
+    // ✅ Fetch reports
     useEffect(() => {
         const fetchReports = async () => {
             try {
@@ -17,6 +17,7 @@ const UserDashboard = ({ setCurrentScreen }) => {
                     headers: { "auth-token": token },
                 });
                 const data = await response.json();
+
                 if (Array.isArray(data)) setReports(data);
                 else setReports([]);
             } catch (error) {
@@ -25,17 +26,28 @@ const UserDashboard = ({ setCurrentScreen }) => {
             }
         };
 
-        fetchReports();
+        if (token) fetchReports();
     }, [token]);
 
-    // ✅ Submit report
+    // ✅ Submit new report
     const handleSubmit = async () => {
-        if (!description) {
-            alert("Please add a description!");
+        if (!description.trim()) {
+            alert("⚠️ Please add a description!");
+            return;
+        }
+
+        if (!image) {
+            alert("⚠️ Please add or capture an image before submitting!");
             return;
         }
 
         try {
+            console.log("🧠 Sending report to backend...", {
+                caption: description,
+                location: "User Report Location",
+                hasImage: !!image,
+            });
+
             const response = await fetch("http://localhost:5000/api/reports/add", {
                 method: "POST",
                 headers: {
@@ -45,20 +57,26 @@ const UserDashboard = ({ setCurrentScreen }) => {
                 body: JSON.stringify({
                     caption: description,
                     location: "User Report Location",
+                    image: image, // Base64 string
                 }),
             });
 
-            const newReport = await response.json();
-            if (newReport && newReport._id) {
-                setReports([...reports, newReport]);
-                setDescription("");
-                setImage(null);
-                alert("✅ Report submitted successfully!");
-            } else {
-                alert("❌ Failed to submit report");
+            const data = await response.json();
+            console.log("📦 Backend Response:", data);
+
+            if (!response.ok) {
+                alert(`❌ Failed to submit report: ${data.error || "Unknown error"}`);
+                return;
             }
+
+            // ✅ Success
+            setReports((prev) => [...prev, data]);
+            setDescription("");
+            setImage(null);
+            alert("✅ Report submitted successfully!");
         } catch (error) {
-            console.error("Error submitting report:", error);
+            console.error("🔥 Error submitting report:", error);
+            alert("❌ Something went wrong while submitting report.");
         }
     };
 
@@ -73,7 +91,7 @@ const UserDashboard = ({ setCurrentScreen }) => {
     const pending = reports.filter((r) => r.status === "Pending").length;
     const approved = reports.filter((r) => r.status === "Approved").length;
 
-    // ✅ Filter reports by type
+    // ✅ Filtered reports
     const filteredReports =
         selectedView === "pending"
             ? reports.filter((r) => r.status === "Pending")
@@ -151,13 +169,16 @@ const UserDashboard = ({ setCurrentScreen }) => {
                         Help us keep your area clean! Describe the garbage issue you found
                         and attach a photo.
                     </p>
+
                     <textarea
                         className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-green-400 outline-none"
                         placeholder="Enter report details..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                     />
+
                     <UserCamera onCapture={setImage} />
+
                     <button
                         onClick={handleSubmit}
                         className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition shadow-md"

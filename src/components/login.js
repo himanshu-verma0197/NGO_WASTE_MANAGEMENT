@@ -21,7 +21,7 @@ const Login = ({ setCurrentScreen, role = "user" }) => {
         const json = await response.json();
 
         if (json.success) {
-            localStorage.setItem("token", json.authtoken);
+            localStorage.setItem("token", json.authToken);
             localStorage.setItem("role", json.role);
 
             // Navigate based on role

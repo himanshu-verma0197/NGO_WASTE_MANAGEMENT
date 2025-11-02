@@ -1,29 +1,30 @@
 const mongoose = require("mongoose");
-const { Schema } = mongoose;
 
-const ReportSchema = new Schema({
+const ReportSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
-        required: true
     },
     caption: {
         type: String,
-        required: true
+        required: true,
     },
     location: {
         type: String,
-        required: true
+        required: true,
+    },
+    image: {
+        type: String, // store Base64 image data here directly
+        required: false,
     },
     status: {
         type: String,
-        enum: ["Pending", "Approved", "Rejected"],
-        default: "Pending"
+        default: "Pending",
     },
     date: {
         type: Date,
-        default: Date.now
-    }
+        default: Date.now,
+    },
 });
 
 module.exports = mongoose.model("report", ReportSchema);
