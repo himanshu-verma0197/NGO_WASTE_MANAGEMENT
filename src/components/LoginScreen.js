@@ -42,18 +42,7 @@ const LoginScreen = ({ setCurrentScreen }) => {
                 </p>
 
                 {/* Signup link */}
-                <div className="mt-4 text-gray-600 text-sm">
-                    <p>
-                        Don’t have an account?{" "}
-                        <button
-                            type="button"
-                            onClick={() => setCurrentScreen("signup")}
-                            className="text-blue-600 hover:underline font-semibold"
-                        >
-                            Create one here
-                        </button>
-                    </p>
-                </div>
+
             </div>
         </div>
     );

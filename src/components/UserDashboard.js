@@ -1,39 +1,34 @@
 import React, { useEffect, useState } from "react";
 import UserCamera from "./UserCamera";
-import StatsCard from "./StatsCard";
+import { Leaf, Trash2, LogOut } from "lucide-react"; // icons
 
 const UserDashboard = ({ setCurrentScreen }) => {
-    // ✅ Initialize reports as an empty array to prevent .length crash
     const [reports, setReports] = useState([]);
     const [description, setDescription] = useState("");
-    const [image, setImage] = useState(null);
+    const [, setImage] = useState(null); // we only use setImage, not image
     const [selectedView, setSelectedView] = useState(null);
     const token = localStorage.getItem("token");
 
-    // ✅ Fetch all reports for logged-in user
-    const fetchReports = async () => {
-        try {
-            const response = await fetch("http://localhost:5000/api/reports/user", {
-                headers: { "auth-token": token },
-            });
-            const data = await response.json();
-            if (Array.isArray(data)) {
-                setReports(data);
-            } else {
-                console.error("Unexpected response:", data);
+    // ✅ fetchReports moved inside useEffect to remove dependency warning
+    useEffect(() => {
+        const fetchReports = async () => {
+            try {
+                const response = await fetch("http://localhost:5000/api/reports/user", {
+                    headers: { "auth-token": token },
+                });
+                const data = await response.json();
+                if (Array.isArray(data)) setReports(data);
+                else setReports([]);
+            } catch (error) {
+                console.error("Failed to fetch reports:", error);
                 setReports([]);
             }
-        } catch (error) {
-            console.error("Failed to fetch reports:", error);
-            setReports([]);
-        }
-    };
+        };
 
-    useEffect(() => {
         fetchReports();
-    }, []);
+    }, [token]);
 
-    // ✅ Submit a new report
+    // ✅ Submit report
     const handleSubmit = async () => {
         if (!description) {
             alert("Please add a description!");
@@ -49,7 +44,7 @@ const UserDashboard = ({ setCurrentScreen }) => {
                 },
                 body: JSON.stringify({
                     caption: description,
-                    location: "User Report Location", // You can replace with GPS or input field
+                    location: "User Report Location",
                 }),
             });
 
@@ -67,18 +62,18 @@ const UserDashboard = ({ setCurrentScreen }) => {
         }
     };
 
-    // ✅ Delete report locally (you can add backend delete later)
+    // ✅ Delete report locally
     const handleDelete = (id) => {
         const updated = reports.filter((r) => r._id !== id);
         setReports(updated);
     };
 
-    // ✅ Calculate stats safely
-    const total = reports?.length || 0;
-    const pending = reports?.filter((r) => r.status === "Pending").length || 0;
-    const approved = reports?.filter((r) => r.status === "Approved").length || 0;
+    // ✅ Stats
+    const total = reports.length;
+    const pending = reports.filter((r) => r.status === "Pending").length;
+    const approved = reports.filter((r) => r.status === "Approved").length;
 
-    // ✅ Filter reports for list view
+    // ✅ Filter reports by type
     const filteredReports =
         selectedView === "pending"
             ? reports.filter((r) => r.status === "Pending")
@@ -89,49 +84,75 @@ const UserDashboard = ({ setCurrentScreen }) => {
                     : [];
 
     return (
-        <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+        <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-8">
             {/* Header */}
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-800">User Dashboard</h1>
+            <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center gap-3">
+                    <Leaf className="text-green-700 w-8 h-8" />
+                    <h1 className="text-3xl font-bold text-green-800">
+                        EcoClean User Dashboard
+                    </h1>
+                </div>
                 <button
                     onClick={() => {
                         localStorage.clear();
                         setCurrentScreen("login");
                     }}
-                    className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                    className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 shadow-md transition"
                 >
+                    <LogOut className="w-4 h-4" />
                     Logout
                 </button>
             </div>
 
             {/* Stats Section */}
-            <div className="grid grid-cols-3 gap-4">
-                <div onClick={() => setSelectedView("total")} className="cursor-pointer">
-                    <StatsCard title="Total Reports" value={total} color="blue" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+                <div
+                    onClick={() => setSelectedView("total")}
+                    className="cursor-pointer bg-white shadow-md rounded-2xl p-6 flex items-center justify-between border-l-4 border-blue-500 hover:bg-blue-50 transition"
+                >
+                    <div>
+                        <h3 className="text-gray-600 font-semibold">Total Reports</h3>
+                        <p className="text-3xl font-bold text-blue-600">{total}</p>
+                    </div>
+                    <Trash2 className="text-blue-500 w-10 h-10 opacity-70" />
                 </div>
+
                 <div
                     onClick={() => setSelectedView("pending")}
-                    className="cursor-pointer"
+                    className="cursor-pointer bg-white shadow-md rounded-2xl p-6 flex items-center justify-between border-l-4 border-yellow-400 hover:bg-yellow-50 transition"
                 >
-                    <StatsCard title="Pending Reports" value={pending} color="yellow" />
+                    <div>
+                        <h3 className="text-gray-600 font-semibold">Pending Reports</h3>
+                        <p className="text-3xl font-bold text-yellow-500">{pending}</p>
+                    </div>
+                    <Trash2 className="text-yellow-400 w-10 h-10 opacity-70" />
                 </div>
+
                 <div
                     onClick={() => setSelectedView("approved")}
-                    className="cursor-pointer"
+                    className="cursor-pointer bg-white shadow-md rounded-2xl p-6 flex items-center justify-between border-l-4 border-green-500 hover:bg-green-50 transition"
                 >
-                    <StatsCard title="Approved Reports" value={approved} color="green" />
+                    <div>
+                        <h3 className="text-gray-600 font-semibold">Approved Reports</h3>
+                        <p className="text-3xl font-bold text-green-600">{approved}</p>
+                    </div>
+                    <Trash2 className="text-green-500 w-10 h-10 opacity-70" />
                 </div>
             </div>
 
             {/* Submit or View Reports */}
             {!selectedView ? (
-                // 📝 Submit Report Section
-                <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-                    <h2 className="font-semibold text-lg text-gray-800">
-                        Submit a New Report
+                <div className="bg-white p-8 rounded-2xl shadow-lg space-y-6 border border-green-100">
+                    <h2 className="font-semibold text-2xl text-green-800">
+                        🗑️ Submit a New Cleanliness Report
                     </h2>
+                    <p className="text-sm text-gray-600">
+                        Help us keep your area clean! Describe the garbage issue you found
+                        and attach a photo.
+                    </p>
                     <textarea
-                        className="w-full border p-2 rounded"
+                        className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-green-400 outline-none"
                         placeholder="Enter report details..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
@@ -139,16 +160,15 @@ const UserDashboard = ({ setCurrentScreen }) => {
                     <UserCamera onCapture={setImage} />
                     <button
                         onClick={handleSubmit}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                        className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition shadow-md"
                     >
                         Submit Report
                     </button>
                 </div>
             ) : (
-                // 📋 Reports List Section
-                <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h2 className="font-semibold text-lg text-gray-800">
+                <div className="bg-white p-8 rounded-2xl shadow-lg border border-green-100">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="font-semibold text-2xl text-green-800">
                             {selectedView === "total"
                                 ? "All Reports"
                                 : selectedView === "pending"
@@ -157,61 +177,68 @@ const UserDashboard = ({ setCurrentScreen }) => {
                         </h2>
                         <button
                             onClick={() => setSelectedView(null)}
-                            className="text-sm bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
+                            className="text-sm bg-gray-500 text-white px-3 py-1 rounded-lg hover:bg-gray-600 transition"
                         >
                             Close
                         </button>
                     </div>
 
                     {filteredReports.length === 0 ? (
-                        <p className="text-gray-500">No reports found.</p>
+                        <p className="text-gray-500 text-center py-6">
+                            No reports found. 🌱
+                        </p>
                     ) : (
-                        filteredReports.map((r) => (
-                            <div
-                                key={r._id}
-                                className="border p-4 rounded-lg flex flex-col md:flex-row items-start md:items-center justify-between space-y-3 md:space-y-0 md:space-x-6"
-                            >
-                                <div className="flex-1">
-                                    <p className="text-sm text-gray-700 mb-2">
-                                        <strong>Description:</strong> {r.caption}
-                                    </p>
-                                    <p className="text-xs text-gray-500 mb-1">
-                                        <strong>Date:</strong>{" "}
-                                        {new Date(r.date).toLocaleString()}
-                                    </p>
-                                    <p
-                                        className={`text-xs font-semibold ${r.status === "Approved"
-                                                ? "text-green-600"
-                                                : "text-yellow-600"
-                                            }`}
-                                    >
-                                        Status: {r.status}
-                                    </p>
+                        <div className="space-y-4">
+                            {filteredReports.map((r) => (
+                                <div
+                                    key={r._id}
+                                    className="border border-gray-200 bg-green-50 hover:bg-green-100 transition rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center shadow-sm"
+                                >
+                                    <div className="flex-1">
+                                        <p className="text-gray-800 mb-2">
+                                            <strong>Description:</strong> {r.caption}
+                                        </p>
+                                        <p className="text-xs text-gray-600 mb-1">
+                                            <strong>Date:</strong>{" "}
+                                            {new Date(r.date).toLocaleString()}
+                                        </p>
+                                        <span
+                                            className={`inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full ${r.status === "Approved"
+                                                    ? "bg-green-200 text-green-700"
+                                                    : "bg-yellow-200 text-yellow-700"
+                                                }`}
+                                        >
+                                            {r.status}
+                                        </span>
+                                    </div>
+
+                                    {r.image && (
+                                        <img
+                                            src={r.image}
+                                            alt="Report"
+                                            className="w-32 h-24 object-cover rounded-lg border shadow"
+                                        />
+                                    )}
+
+                                    {selectedView === "pending" && (
+                                        <button
+                                            onClick={() => handleDelete(r._id)}
+                                            className="bg-rose-600 text-white px-4 py-2 rounded-lg hover:bg-rose-700 transition"
+                                        >
+                                            Delete
+                                        </button>
+                                    )}
                                 </div>
-
-                                {/* Optional photo preview */}
-                                {r.image && (
-                                    <img
-                                        src={r.image}
-                                        alt="Report"
-                                        className="w-40 h-28 object-cover rounded-lg border shadow"
-                                    />
-                                )}
-
-                                {/* Delete pending reports */}
-                                {selectedView === "pending" && (
-                                    <button
-                                        onClick={() => handleDelete(r._id)}
-                                        className="bg-rose-600 text-white px-4 py-2 rounded-lg hover:bg-rose-700"
-                                    >
-                                        Delete
-                                    </button>
-                                )}
-                            </div>
-                        ))
+                            ))}
+                        </div>
                     )}
                 </div>
             )}
+
+            {/* Footer */}
+            <div className="mt-10 text-center text-sm text-gray-500">
+                © {new Date().getFullYear()} EcoClean | Together for a cleaner city 🌿
+            </div>
         </div>
     );
 };
