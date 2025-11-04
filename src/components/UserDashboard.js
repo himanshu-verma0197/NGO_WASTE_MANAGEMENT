@@ -9,7 +9,7 @@ const UserDashboard = ({ setCurrentScreen }) => {
     const [selectedView, setSelectedView] = useState(null);
     const token = localStorage.getItem("token");
 
-    // ✅ Fetch reports
+    // ✅ Fetch reports of this user
     useEffect(() => {
         const fetchReports = async () => {
             try {
@@ -37,17 +37,11 @@ const UserDashboard = ({ setCurrentScreen }) => {
         }
 
         if (!image) {
-            alert("⚠️ Please add or capture an image before submitting!");
+            alert("⚠️ Please capture or upload an image before submitting!");
             return;
         }
 
         try {
-            console.log("🧠 Sending report to backend...", {
-                caption: description,
-                location: "User Report Location",
-                hasImage: !!image,
-            });
-
             const response = await fetch("http://localhost:5000/api/reports/add", {
                 method: "POST",
                 headers: {
@@ -57,26 +51,24 @@ const UserDashboard = ({ setCurrentScreen }) => {
                 body: JSON.stringify({
                     caption: description,
                     location: "User Report Location",
-                    image: image, // Base64 string
+                    image,
                 }),
             });
 
             const data = await response.json();
-            console.log("📦 Backend Response:", data);
 
             if (!response.ok) {
                 alert(`❌ Failed to submit report: ${data.error || "Unknown error"}`);
                 return;
             }
 
-            // ✅ Success
-            setReports((prev) => [...prev, data]);
+            setReports((prev) => [data, ...prev]);
             setDescription("");
             setImage(null);
             alert("✅ Report submitted successfully!");
         } catch (error) {
-            console.error("🔥 Error submitting report:", error);
-            alert("❌ Something went wrong while submitting report.");
+            console.error("Error submitting report:", error);
+            alert("❌ Something went wrong while submitting the report.");
         }
     };
 
@@ -89,17 +81,20 @@ const UserDashboard = ({ setCurrentScreen }) => {
     // ✅ Stats
     const total = reports.length;
     const pending = reports.filter((r) => r.status === "Pending").length;
-    const approved = reports.filter((r) => r.status === "Approved").length;
+    const inProgress = reports.filter((r) => r.workStatus === "In Progress").length;
+    const completed = reports.filter((r) => r.workStatus === "Completed").length;
 
-    // ✅ Filtered reports
+    // ✅ Filter view logic
     const filteredReports =
         selectedView === "pending"
             ? reports.filter((r) => r.status === "Pending")
-            : selectedView === "approved"
-                ? reports.filter((r) => r.status === "Approved")
-                : selectedView === "total"
-                    ? reports
-                    : [];
+            : selectedView === "inProgress"
+                ? reports.filter((r) => r.workStatus === "In Progress")
+                : selectedView === "completed"
+                    ? reports.filter((r) => r.workStatus === "Completed")
+                    : selectedView === "total"
+                        ? reports
+                        : [];
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-8">
@@ -124,39 +119,31 @@ const UserDashboard = ({ setCurrentScreen }) => {
             </div>
 
             {/* Stats Section */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-                <div
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-10">
+                <StatCard
+                    label="Total Reports"
+                    count={total}
+                    color="blue"
                     onClick={() => setSelectedView("total")}
-                    className="cursor-pointer bg-white shadow-md rounded-2xl p-6 flex items-center justify-between border-l-4 border-blue-500 hover:bg-blue-50 transition"
-                >
-                    <div>
-                        <h3 className="text-gray-600 font-semibold">Total Reports</h3>
-                        <p className="text-3xl font-bold text-blue-600">{total}</p>
-                    </div>
-                    <Trash2 className="text-blue-500 w-10 h-10 opacity-70" />
-                </div>
-
-                <div
+                />
+                <StatCard
+                    label="Pending"
+                    count={pending}
+                    color="yellow"
                     onClick={() => setSelectedView("pending")}
-                    className="cursor-pointer bg-white shadow-md rounded-2xl p-6 flex items-center justify-between border-l-4 border-yellow-400 hover:bg-yellow-50 transition"
-                >
-                    <div>
-                        <h3 className="text-gray-600 font-semibold">Pending Reports</h3>
-                        <p className="text-3xl font-bold text-yellow-500">{pending}</p>
-                    </div>
-                    <Trash2 className="text-yellow-400 w-10 h-10 opacity-70" />
-                </div>
-
-                <div
-                    onClick={() => setSelectedView("approved")}
-                    className="cursor-pointer bg-white shadow-md rounded-2xl p-6 flex items-center justify-between border-l-4 border-green-500 hover:bg-green-50 transition"
-                >
-                    <div>
-                        <h3 className="text-gray-600 font-semibold">Approved Reports</h3>
-                        <p className="text-3xl font-bold text-green-600">{approved}</p>
-                    </div>
-                    <Trash2 className="text-green-500 w-10 h-10 opacity-70" />
-                </div>
+                />
+                <StatCard
+                    label="In Progress"
+                    count={inProgress}
+                    color="orange"
+                    onClick={() => setSelectedView("inProgress")}
+                />
+                <StatCard
+                    label="Completed"
+                    count={completed}
+                    color="green"
+                    onClick={() => setSelectedView("completed")}
+                />
             </div>
 
             {/* Submit or View Reports */}
@@ -166,8 +153,7 @@ const UserDashboard = ({ setCurrentScreen }) => {
                         🗑️ Submit a New Cleanliness Report
                     </h2>
                     <p className="text-sm text-gray-600">
-                        Help us keep your area clean! Describe the garbage issue you found
-                        and attach a photo.
+                        Help us keep your area clean! Describe the issue and attach a photo.
                     </p>
 
                     <textarea
@@ -194,7 +180,9 @@ const UserDashboard = ({ setCurrentScreen }) => {
                                 ? "All Reports"
                                 : selectedView === "pending"
                                     ? "Pending Reports"
-                                    : "Approved Reports"}
+                                    : selectedView === "inProgress"
+                                        ? "Reports In Progress"
+                                        : "Completed Reports"}
                         </h2>
                         <button
                             onClick={() => setSelectedView(null)}
@@ -206,7 +194,7 @@ const UserDashboard = ({ setCurrentScreen }) => {
 
                     {filteredReports.length === 0 ? (
                         <p className="text-gray-500 text-center py-6">
-                            No reports found. 🌱
+                            No reports found 🌱
                         </p>
                     ) : (
                         <div className="space-y-4">
@@ -224,27 +212,50 @@ const UserDashboard = ({ setCurrentScreen }) => {
                                             {new Date(r.date).toLocaleString()}
                                         </p>
                                         <span
-                                            className={`inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full ${r.status === "Approved"
+                                            className={`inline-block mt-2 px-3 py-1 text-xs font-semibold rounded-full ${r.workStatus === "Completed"
                                                     ? "bg-green-200 text-green-700"
-                                                    : "bg-yellow-200 text-yellow-700"
+                                                    : r.workStatus === "In Progress"
+                                                        ? "bg-yellow-200 text-yellow-700"
+                                                        : "bg-blue-200 text-blue-700"
                                                 }`}
                                         >
-                                            {r.status}
+                                            {r.status === "Pending"
+                                                ? "Pending"
+                                                : r.workStatus === "In Progress"
+                                                    ? "In Progress (NGO Working)"
+                                                    : r.workStatus === "Completed"
+                                                        ? "Completed ✅"
+                                                        : "Approved"}
                                         </span>
+
+                                        {/* ✅ Show NGO completion image if completed */}
+                                        {r.workStatus === "Completed" && r.completedImage && (
+                                            <div className="mt-4">
+                                                <h4 className="text-sm font-semibold text-green-700">
+                                                    Work Completed by NGO
+                                                </h4>
+                                                <img
+                                                    src={r.completedImage}
+                                                    alt="Completion"
+                                                    className="w-40 h-28 object-cover rounded-lg border shadow mt-2"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
 
+                                    {/* Show report image */}
                                     {r.image && (
                                         <img
                                             src={r.image}
                                             alt="Report"
-                                            className="w-32 h-24 object-cover rounded-lg border shadow"
+                                            className="w-32 h-24 object-cover rounded-lg border shadow mt-4 md:mt-0"
                                         />
                                     )}
 
                                     {selectedView === "pending" && (
                                         <button
                                             onClick={() => handleDelete(r._id)}
-                                            className="bg-rose-600 text-white px-4 py-2 rounded-lg hover:bg-rose-700 transition"
+                                            className="bg-rose-600 text-white px-4 py-2 rounded-lg hover:bg-rose-700 transition mt-4 md:mt-0"
                                         >
                                             Delete
                                         </button>
@@ -263,5 +274,19 @@ const UserDashboard = ({ setCurrentScreen }) => {
         </div>
     );
 };
+
+// 🌿 Simple reusable stat card
+const StatCard = ({ label, count, color, onClick }) => (
+    <div
+        onClick={onClick}
+        className={`cursor-pointer bg-white shadow-md rounded-2xl p-6 flex items-center justify-between border-l-4 border-${color}-500 hover:bg-${color}-50 transition`}
+    >
+        <div>
+            <h3 className="text-gray-600 font-semibold">{label}</h3>
+            <p className={`text-3xl font-bold text-${color}-600`}>{count}</p>
+        </div>
+        <Trash2 className={`text-${color}-500 w-10 h-10 opacity-70`} />
+    </div>
+);
 
 export default UserDashboard;

@@ -1,79 +1,89 @@
 const express = require("express");
-const router = express.Router();
-const fetchuser = require("../middleware/fetchuser");
 const Report = require("../models/Report");
+const fetchuser = require("../middleware/fetchuser");
+const router = express.Router();
 
-// ✅ Add a new report (only for users)
-router.post("/add", fetchuser, async (req, res) => {
-    try {
-        if (req.user.role === "admin") {
-            return res.status(403).json({ error: "Admins cannot submit reports" });
-        }
-
-        console.log("📩 Incoming Body:", req.body); // <-- Add this
-        const { caption, location, image } = req.body;
-
-        const report = new Report({
-            user: req.user.id,
-            caption,
-            location,
-            image, // store image directly here
-            status: "Pending",
-        });
-
-        const savedReport = await report.save();
-        res.json(savedReport);
-    } catch (error) {
-        console.error("Error saving report:", error);
-        res.status(500).send("Internal Server Error");
-    }
-});
-
-// ✅ Get all reports (Admin only)
+// 📍 Get reports for Admin (NGO)
 router.get("/all", fetchuser, async (req, res) => {
     try {
         if (req.user.role !== "admin") {
-            return res.status(403).json({ error: "Access denied: Admins only" });
+            return res.status(403).json({ error: "Access denied" });
         }
 
-        const reports = await Report.find()
+        const adminId = req.user.id;
+        const reports = await Report.find({
+            $or: [
+                { status: "Pending" }, // unapproved reports
+                { approvedBy: adminId }, // reports approved by this admin
+            ],
+        })
             .populate("user", "name email")
             .sort({ date: -1 });
 
         res.json(reports);
-    } catch (error) {
-        console.error(error.message);
+    } catch (err) {
+        console.error(err.message);
         res.status(500).send("Internal Server Error");
     }
 });
 
-// ✅ Get all reports of logged-in user
+// 🧾 Get reports for User
 router.get("/user", fetchuser, async (req, res) => {
     try {
         const reports = await Report.find({ user: req.user.id }).sort({ date: -1 });
         res.json(reports);
-    } catch (error) {
-        console.error(error.message);
+    } catch (err) {
+        console.error(err.message);
         res.status(500).send("Internal Server Error");
     }
 });
 
-// ✅ Update report status (Admin only)
+// ✍️ User adds a report
+router.post("/add", fetchuser, async (req, res) => {
+    try {
+        const { caption, location, image } = req.body;
+        const report = new Report({
+            caption,
+            location,
+            image,
+            user: req.user.id,
+        });
+        const saved = await report.save();
+        res.json(saved);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+// ✅ Admin (NGO) updates a report (Approve / Work Status / Completed Image)
 router.put("/update/:id", fetchuser, async (req, res) => {
     try {
         if (req.user.role !== "admin") {
-            return res.status(403).json({ error: "Access denied: Admins only" });
+            return res.status(403).json({ error: "Access denied" });
         }
 
-        const { status } = req.body;
+        const { action, completedImage } = req.body;
+        const update = {};
+
+        if (action === "approve") {
+            update.status = "Approved";
+            update.workStatus = "In Progress";
+            update.approvedBy = req.user.id;
+        } else if (action === "complete") {
+            update.workStatus = "Completed";
+            if (completedImage) update.completedImage = completedImage;
+        }
+
         const updatedReport = await Report.findByIdAndUpdate(
             req.params.id,
-            { status },
+            { $set: update },
             { new: true }
         );
+
         res.json(updatedReport);
-    } catch (error) {
-        console.error(error.message);
+    } catch (err) {
+        console.error(err.message);
         res.status(500).send("Internal Server Error");
     }
 });

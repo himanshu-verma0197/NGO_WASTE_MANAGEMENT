@@ -1,30 +1,33 @@
 const mongoose = require("mongoose");
 
 const ReportSchema = new mongoose.Schema({
+    caption: { type: String, required: true },
+    location: { type: String },
+    image: { type: String }, // original user image
+    status: {
+        type: String,
+        enum: ["Pending", "Approved"],
+        default: "Pending",
+    },
+    workStatus: {
+        type: String,
+        enum: ["Pending", "In Progress", "Completed"],
+        default: "Pending",
+    },
+    completedImage: {
+        type: String,
+        default: "",
+    },
+    approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user", // the admin/NGO who approved
+        default: null,
+    },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
     },
-    caption: {
-        type: String,
-        required: true,
-    },
-    location: {
-        type: String,
-        required: true,
-    },
-    image: {
-        type: String, // store Base64 image data here directly
-        required: false,
-    },
-    status: {
-        type: String,
-        default: "Pending",
-    },
-    date: {
-        type: Date,
-        default: Date.now,
-    },
+    date: { type: Date, default: Date.now },
 });
 
 module.exports = mongoose.model("report", ReportSchema);
